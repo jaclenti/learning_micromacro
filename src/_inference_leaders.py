@@ -153,7 +153,7 @@ def train_svi(X, edges, roles, n_steps, intermediate_steps = None, rho = 32, pro
     if guide_family == "normal":
         guide = AutoNormal(model)
     if guide_family == "NF":
-        guide = AutoBNAFNormal(model)
+        guide = AutoBNAFNormal(model, num_flows = 5)
         n_steps = int(n_steps / 5)
         intermediate_steps = int(intermediate_steps / 5)
 
@@ -443,7 +443,7 @@ if __name__ == '__main__':
     t0 = time()
     edge_per_t = 10
     
-    date = "240216z"
+    date = "exp5"
     id = f"{rep}_{N}_{initial_leaders_ratio}_{T}"
     
     if not os.path.exists(f"../data/leaders_{date}"):
