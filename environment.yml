@@ -137,4 +137,4 @@ dependencies:
       - sympy==1.12
       - torch==2.2.0
       - triton==2.2.0
-prefix: /home/jacopo.lenti/miniconda3/envs/micromacro_env
+prefix: /home/user/miniconda3/envs/micromacro_env

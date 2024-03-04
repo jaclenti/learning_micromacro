@@ -14,7 +14,7 @@ import numpyro
 from time import time
 from jax.scipy.special import expit as sigmoid
 from numpyro.infer import SVI, Trace_ELBO, TraceGraph_ELBO, MCMC, NUTS
-from numpyro.infer.autoguide import AutoNormal, AutoBNAFNormal
+from numpyro.infer.autoguide import AutoNormal, AutoBNAFNormal, AutoIAFNormal
 from pyro.nn import PyroModule
 from numpyro import distributions
 from numpyro.optim import Adam
@@ -153,9 +153,12 @@ def train_svi(X, edges, roles, n_steps, intermediate_steps = None, rho = 32, pro
     if guide_family == "normal":
         guide = AutoNormal(model)
     if guide_family == "NF":
-        guide = AutoBNAFNormal(model, num_flows = 5)
-        n_steps = int(n_steps / 5)
-        intermediate_steps = int(intermediate_steps / 5)
+        guide = AutoBNAFNormal(model, num_flows = 2)
+        # guide = AutoIAFNormal(model)
+        # n_steps = int(n_steps / 5)
+        # intermediate_steps = int(intermediate_steps / 5)
+        n_steps = int(n_steps / 2)
+        intermediate_steps = int(intermediate_steps / 2)
 
     data = initialize_training(X, edges, roles, rho = rho)
     optimizer = Adam(step_size = lr)
@@ -381,8 +384,8 @@ def complete_experiment(N, T, edge_per_t, initial_leaders, rho = 32,
             l_plus = [[round(i, 3),round(j, 3)] for i in np.arange(0.05, 0.5, 0.1) for j in np.arange(0.05,0.5, 0.1) if i >= j]
             l_minus = [[round(1-i, 3),round(1-j, 3)] for i in np.arange(0.05, 0.5, 0.1) for j in np.arange(0.05,0.5, 0.1) if i >= j]
 
-            epsilon_plus = np.array(l_plus[np.random.choice(10)])
-            epsilon_minus = np.array(l_minus[np.random.choice(10)])
+            epsilon_plus = np.array(l_plus[np.random.choice(15)])
+            epsilon_minus = np.array(l_minus[np.random.choice(15)])
             epsilon_plus_F, epsilon_plus_L = epsilon_plus
             epsilon_minus_F, epsilon_minus_L = epsilon_minus
 
@@ -443,7 +446,8 @@ if __name__ == '__main__':
     t0 = time()
     edge_per_t = 10
     
-    date = "exp5"
+
+    date = "exp210000epochs"
     id = f"{rep}_{N}_{initial_leaders_ratio}_{T}"
     
     if not os.path.exists(f"../data/leaders_{date}"):
@@ -452,19 +456,21 @@ if __name__ == '__main__':
         except:
             None
     path = f"../data/leaders_{date}/estimation_T{T}_N{N}_lratio{initial_leaders_ratio}_rep{rep}_method{method}.pkl"
-
+    
+        
     print(f"++++++ leaders rep {rep} start T{T} N{N} ilr{initial_leaders_ratio} {method} ++++++ ")
 
-    if (N / initial_leaders_ratio) < 1:
-        print(f"skip high initial_leaders_ratio N{N} T{T} ilr{initial_leaders_ratio}")
-        
+    if ((N / initial_leaders_ratio) < 1)|((T > 2048) & (method in ["abc", "mcmc"]))|((N > 200) & (method == "sviNF")):
+        print(f"skip {method} N{N} T{T} ilr{initial_leaders_ratio}")
     else:
-        experiment = complete_experiment(N, T, edge_per_t, int(N / initial_leaders_ratio),  
-                                         n_steps = 20000,
-                                         n_samples = 800, method = method, #intermediate_populations = 5,
-                                         populations_budget = 40, population_size = 5000,
-                                         id = id, date = date
-                                        )
-        
-        save_pickle(experiment, path)
-        print(f">>>>>>>> rep {rep} save {T} {N} {initial_leaders_ratio} {method} {round(time() - t0)}s<<<<<<<")
+        # if not os.path.exists(path):
+        if True:
+            experiment = complete_experiment(N, T, edge_per_t, int(N / initial_leaders_ratio),  
+                                            n_steps = 20000,
+                                            n_samples = 800, method = method, #intermediate_populations = 5,
+                                            populations_budget = 40, population_size = 5000,
+                                            id = id, date = date
+                                            )
+            
+            save_pickle(experiment, path)
+            print(f">>>>>>>> rep {rep} save {T} {N} {initial_leaders_ratio} {method} {round(time() - t0)}s<<<<<<<")
